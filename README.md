@@ -8,29 +8,30 @@ little customizations as possible.
 The aim is backward compatibility with the original FDI and the following kernel
 command line options are fully functional:
 
-proxy.url - URL to Foreman or Proxy (if omitted DNS SRV lookup is made)
-proxy.type - endpoint type: “foreman” or “proxy”
-fdi.ssh - configure ssh daemon after start (1 to enable)
-fdi.rootpw - configure ssh daemon password (plain string)
-fdi.uploadsleep - seconds between facter runs (30 by default)
-fdi.dns_nameserver - nameserver to use for DNS SRV record
-fdi.dns_search - search domain to use for DNS SRV record
-fdi.dns_ndots - ndots option to use for DNS SRV record
+* proxy.url - URL to Foreman or Proxy (if omitted DNS SRV lookup is made)
+* proxy.type - endpoint type: “foreman” or “proxy”
+* fdi.ssh - configure ssh daemon after start (1 to enable)
+* fdi.rootpw - configure ssh daemon password (plain string)
+* fdi.uploadsleep - seconds between facter runs (30 by default)
+* fdi.dns_nameserver - nameserver to use for DNS SRV record
+* fdi.dns_search - search domain to use for DNS SRV record
+* fdi.dns_ndots - ndots option to use for DNS SRV record
 
 Features that are not carried over:
 
-fdi.countdown - initial countdown in seconds before registration attempt (45 by default)
-fdi.cachefacts - number of fact uploads without caching (0 by default)
-fdi.zips - extensions to download
-fdi.zipserver - override TFTP server reported by DHCP
-fdi.initnet=all/bootif - initialize all or pxe NICs (default) during startup
-fdi.px* - PXE-less workflow (described below)
-fdi.dhcp_timeout - DHCP NetworkManager timeout in seconds (300 by default)
-fdi.ipwait - wait time for IP to be available in proxy SSL cert start (120 by default)
-fdi.nmwait - nmcli –wait option for NetworkManager (120 by default)
-fdi.proxy_cert_days - number of days HTTPS self-signed cert is valid (999 by default)
-fdi.script - base64 encoded boot script
-fdi.vlan.primary - VLAN ID to set for primary interface
+* fdi.countdown - initial countdown in seconds before registration attempt (45 by default)
+* fdi.cachefacts - number of fact uploads without caching (0 by default)
+* fdi.zips - extensions to download
+* fdi.zipserver - override TFTP server reported by DHCP
+* fdi.initnet=all/bootif - initialize all or pxe NICs (default) during startup
+* fdi.pxmac - alternative to BOOTIF (just use BOOTIF instead)
+* fdi.px* - PXE-less workflow (described below)
+* fdi.dhcp_timeout - DHCP NetworkManager timeout in seconds (300 by default)
+* fdi.ipwait - wait time for IP to be available in proxy SSL cert start (120 by default)
+* fdi.nmwait - nmcli –wait option for NetworkManager (120 by default)
+* fdi.proxy_cert_days - number of days HTTPS self-signed cert is valid (999 by default)
+* fdi.script - base64 encoded boot script
+* fdi.vlan.primary - VLAN ID to set for primary interface
 
 Caching of facts will not be necessary as facts will not be implemented via
 Facter anymore.

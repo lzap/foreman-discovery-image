@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"fdi/internal/facts"
+	"fdi/internal/opt"
 )
 
 // Endpoint is a facts upload endpoint (Foreman or Smart Proxy).
@@ -59,12 +60,16 @@ func (e *Endpoint) Once(f *facts.Facts) error {
 	}
 	defer resp.Body.Close()
 
+	b, _ := io.ReadAll(resp.Body)
+	if opt.Debug {
+		log.Printf("upload request: %s; response: %s; status: %q", string(body), string(b), resp.Status)
+	}
+
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 		return nil
 	}
 
-	b, _ := io.ReadAll(resp.Body)
-	return fmt.Errorf("endpoint returned %s: %s", resp.Status, string(b))
+	return fmt.Errorf("upload failed: %s", resp.Status)
 }
 
 // Loop runs the upload loop until ctx is cancelled: collect facts, upload, then sleep for interval.

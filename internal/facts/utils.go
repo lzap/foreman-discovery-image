@@ -100,20 +100,6 @@ func readBlockSize(path string) int64 {
 	return sectors * 512
 }
 
-// pxelinuxToMAC converts a PXELinux-style BOOTIF/fdi.pxmac value to colon-separated MAC string.
-// Format: "01-52-54-00-94-9e-52" or "01-52:54:00:94:9e:52" -> "52:54:00:94:9e:52".
-func pxelinuxToMAC(s string) string {
-	s = strings.TrimSpace(s)
-	if s == "" {
-		return ""
-	}
-	_, after, ok := strings.Cut(s, "-")
-	if !ok {
-		return ""
-	}
-	return strings.ToLower(strings.ReplaceAll(after, "-", ":"))
-}
-
 // systemMACs reads all non-loopback interface MACs from /sys/class/net.
 // Returns nil on error or if no interfaces found.
 func systemMACs() []net.HardwareAddr {

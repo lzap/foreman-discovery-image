@@ -44,9 +44,9 @@ func collectNetworking(result *Facts) error {
 			continue
 		}
 
-		macStr := ""
-		if len(iface.HardwareAddr) > 0 {
-			macStr = iface.HardwareAddr.String()
+		var macAddr MAC
+		if len(iface.HardwareAddr) == 6 || len(iface.HardwareAddr) == 20 {
+			macAddr = MACFromHardwareAddr(iface.HardwareAddr)
 		}
 
 		var bindings, bindings6 []Binding
@@ -93,7 +93,7 @@ func collectNetworking(result *Facts) error {
 			IP:        firstIP,
 			IP6:       firstIP6,
 			MTU:       iface.MTU,
-			MAC:       macStr,
+			MAC:       macAddr,
 			Netmask:   firstNetmask,
 			Network:   firstNetwork,
 			Bindings:  bindings,
@@ -104,7 +104,7 @@ func collectNetworking(result *Facts) error {
 			result.Custom = make(map[string]any)
 		}
 		result.Custom["ipaddress_"+iface.Name] = firstIP
-		result.Custom["macaddress_"+iface.Name] = macStr
+		result.Custom["macaddress_"+iface.Name] = macAddr
 		if firstIP6 != "" {
 			result.Custom["ip6address_"+iface.Name] = firstIP6
 		}
@@ -112,7 +112,7 @@ func collectNetworking(result *Facts) error {
 		if iface.Name == primaryName {
 			result.Networking.Primary = iface.Name
 			result.Networking.IP = firstIP
-			result.Networking.MAC = macStr
+			result.Networking.MAC = macAddr
 			result.Networking.Netmask = firstNetmask
 			result.Networking.Network = firstNetwork
 		}

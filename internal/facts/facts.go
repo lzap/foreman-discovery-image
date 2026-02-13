@@ -16,7 +16,7 @@ import (
 
 // Facts holds all facts
 type Facts struct {
-	DiscoveryBootIf string     `json:"discovery_bootif"`
+	DiscoveryBootIf MAC        `json:"discovery_bootif"`
 	Interfaces      string     `json:"interfaces"`
 	Networking      Networking `json:"networking"`
 	SerialNumber    string     `json:"serialnumber,omitempty"`
@@ -83,7 +83,7 @@ type Networking struct {
 	FQDN       string               `json:"fqdn"`
 	Hostname   string               `json:"hostname"`
 	IP         string               `json:"ip"`
-	MAC        string               `json:"mac"`
+	MAC        MAC                  `json:"mac"`
 	Netmask    string               `json:"netmask"`
 	Network    string               `json:"network"`
 	Primary    string               `json:"primary"`
@@ -94,7 +94,7 @@ type Interface struct {
 	IP        string    `json:"ip"`
 	IP6       string    `json:"ip6"`
 	MTU       int       `json:"mtu"`
-	MAC       string    `json:"mac"`
+	MAC       MAC       `json:"mac"`
 	Netmask   string    `json:"netmask"`
 	Network   string    `json:"network"`
 	Bindings  []Binding `json:"bindings,omitempty"`

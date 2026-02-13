@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"fdi/internal/facts"
+	"fdi/internal/metric"
 	"fdi/internal/opt"
 	"fdi/internal/upload"
 )
@@ -19,6 +20,8 @@ import (
 func main() {
 	flag.Parse()
 	log.SetFlags(0)
+
+	metric.EnsurePXE()
 
 	typeStr := opt.Type
 
@@ -46,9 +49,6 @@ func main() {
 		ep := &upload.Endpoint{URL: opt.URL, Type: typeStr}
 		if err := ep.Once(&f); err != nil {
 			log.Fatalf("upload failed: %v", err)
-		}
-		if opt.Debug {
-			log.Println("Successful fact upload")
 		}
 		return
 	}
