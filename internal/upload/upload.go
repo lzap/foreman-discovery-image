@@ -2,10 +2,12 @@ package upload
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -63,4 +65,23 @@ func (e *Endpoint) Once(f *facts.Facts) error {
 
 	b, _ := io.ReadAll(resp.Body)
 	return fmt.Errorf("endpoint returned %s: %s", resp.Status, string(b))
+}
+
+// Loop runs the upload loop until ctx is cancelled: collect facts, upload, then sleep for interval.
+// Interval is interrupted by ctx cancellation. customPath and debug are passed to facts.Collect.
+func (e *Endpoint) Loop(ctx context.Context, interval time.Duration, customPath string, debug bool) {
+	for {
+		var f facts.Facts
+		if err := facts.Collect(&f, debug, customPath); err != nil {
+			log.Printf("collect failed: %v", err)
+		} else if err := e.Once(&f); err != nil {
+			log.Printf("upload failed: %v", err)
+		}
+
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(interval):
+		}
+	}
 }

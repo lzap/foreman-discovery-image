@@ -33,3 +33,12 @@ func parseKernelCmdline() map[string]string {
 func Get(key string) string {
 	return options[key]
 }
+
+// GetDefault returns the value for the given kernel command line option key,
+// or defaultVal if the option is not set.
+func GetDefault(key, defaultVal string) string {
+	if v := options[key]; v != "" {
+		return v
+	}
+	return defaultVal
+}

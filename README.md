@@ -16,7 +16,6 @@ fdi.uploadsleep - seconds between facter runs (30 by default)
 fdi.dns_nameserver - nameserver to use for DNS SRV record
 fdi.dns_search - search domain to use for DNS SRV record
 fdi.dns_ndots - ndots option to use for DNS SRV record
-fdi.vlan.primary - VLAN ID to set for primary interface
 
 Features that are not carried over:
 
@@ -31,16 +30,20 @@ fdi.ipwait - wait time for IP to be available in proxy SSL cert start (120 by de
 fdi.nmwait - nmcli –wait option for NetworkManager (120 by default)
 fdi.proxy_cert_days - number of days HTTPS self-signed cert is valid (999 by default)
 fdi.script - base64 encoded boot script
+fdi.vlan.primary - VLAN ID to set for primary interface
 
 Caching of facts will not be necessary as facts will not be implemented via
 Facter anymore.
 
-ZIP extensions are replaced by easy customization via bootable containers.
+ZIP extensions and scripts are replaced by easy customization via bootable
+containers.
 
 Various workarounds or settings for network initialization will be dropped,
 because FDI will make full use of NetworkManager and network metrics to properly
 setup default route automatically. Countdown will not be necessary and PXE-less
 workflow will be completely removed as it was never fully supported by Red Hat.
+
+VLAN is not implemented, customers need to customize FDI in order to achieve this.
 
 We need to reach out to customers who are using the unsupported PXE-less
 workflow for virtualized environments and discuss possible options.
@@ -58,6 +61,9 @@ all actions.
 * `-url` — endpoint base URL (e.g. `https://foreman.example.com`). If omitted, the kernel command line option `proxy.url` is used
 * `-type` — endpoint type: `foreman` or `proxy` (default: `foreman`). If omitted, the kernel command line option `proxy.type` is used
 * `-custom_path` — path to search for `fdi-fact-*` executables in addition to PWD (default: `/usr/local/bin`)
+* `-uploadsleep` — seconds to wait between fact uploads in service mode. If 0 (default), the kernel command line option `fdi.uploadsleep` is used, or 30 if unset.
+
+When started without `-facts` or `-once`, **service mode** runs: a loop that collects facts, uploads them to the endpoint, then sleeps for the configured interval. Shutdown is graceful on SIGINT (Ctrl-C) or SIGTERM. Endpoint URL and type are taken from `proxy.url` and `proxy.type` on the kernel command line when not set by flags.
 
 ## Custom facts
 

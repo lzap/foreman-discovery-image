@@ -1,13 +1,16 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
-	"fmt"
 	"log"
 	"os"
+	"os/signal"
+	"sync"
+	"syscall"
+	"time"
 
-	"fdi/internal/cmdline"
 	"fdi/internal/facts"
 	"fdi/internal/opt"
 	"fdi/internal/upload"
@@ -17,17 +20,7 @@ func main() {
 	flag.Parse()
 	log.SetFlags(0)
 
-	url := opt.URL
-	if url == "" {
-		url = cmdline.Get("proxy.url")
-	}
 	typeStr := opt.Type
-	if typeStr == "" {
-		typeStr = cmdline.Get("proxy.type")
-	}
-	if typeStr == "" {
-		typeStr = "foreman"
-	}
 
 	if opt.Facts {
 		var f facts.Facts
@@ -47,10 +40,10 @@ func main() {
 		if err := facts.Collect(&f, opt.Debug, opt.CustomPath); err != nil {
 			log.Fatalf("failed to collect facts: %v", err)
 		}
-		if url == "" {
+		if opt.URL == "" {
 			log.Fatalf("-url or proxy.url is required for -once")
 		}
-		ep := &upload.Endpoint{URL: url, Type: typeStr}
+		ep := &upload.Endpoint{URL: opt.URL, Type: typeStr}
 		if err := ep.Once(&f); err != nil {
 			log.Fatalf("upload failed: %v", err)
 		}
@@ -60,6 +53,24 @@ func main() {
 		return
 	}
 
-	fmt.Fprintln(os.Stderr, "Service not implemented yet")
-	os.Exit(1)
+	if opt.URL == "" {
+		log.Fatalf("endpoint URL required for service mode (set -url or proxy.url on kernel command line)")
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		ep := &upload.Endpoint{URL: opt.URL, Type: typeStr}
+		ep.Loop(ctx, time.Duration(opt.UploadSleep)*time.Second, opt.CustomPath, opt.Debug)
+	}()
+
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	<-sigCh
+	cancel()
+	wg.Wait()
 }
