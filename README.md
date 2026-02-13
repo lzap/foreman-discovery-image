@@ -1,18 +1,60 @@
-```
-  _____
- |  ___|__  _ __ ___ _ __ ___   __ _ _ __
- | |_ / _ \| '__/ _ \ '_ ` _ \ / _` | '_ \
- |  _| (_) | | |  __/ | | | | | (_| | | | |
- |_|__\___/|_|  \___|_| |_| |_|\__,_|_| |_|
-   |  _ \(_)___  ___ _____   _____ _ __ _   _
-   | | | | / __|/ __/ _ \ \ / / _ \ '__| | | |
-   | |_| | \__ \ (_| (_) \ V /  __/ |  | |_| |
-   |____/|_|___/\___\___/ \_/ \___|_|   \__, |
-                                        |___/
-```
+# Foreman Discovery Image
 
-Foreman Discovery Image
-=======================
+This branch contains a modernized version of FDI based on bootable containers.
+The whole workflow and services is refactored to a single Go-based service that
+performs all the logic. The base system was changed from CentOS 9 to 10 with as
+little customizations as possible.
+
+The aim is backward compatibility with the original FDI and the following kernel
+command line options are fully functional:
+
+proxy.url - URL to Foreman or Proxy (if omitted DNS SRV lookup is made)
+proxy.type - endpoint type: “foreman” or “proxy”
+fdi.ssh - configure ssh daemon after start (1 to enable)
+fdi.rootpw - configure ssh daemon password (plain string)
+fdi.uploadsleep - seconds between facter runs (30 by default)
+fdi.dns_nameserver - nameserver to use for DNS SRV record
+fdi.dns_search - search domain to use for DNS SRV record
+fdi.dns_ndots - ndots option to use for DNS SRV record
+fdi.vlan.primary - VLAN ID to set for primary interface
+
+Features that are not carried over:
+
+fdi.countdown - initial countdown in seconds before registration attempt (45 by default)
+fdi.cachefacts - number of fact uploads without caching (0 by default)
+fdi.zips - extensions to download
+fdi.zipserver - override TFTP server reported by DHCP
+fdi.initnet=all/bootif - initialize all or pxe NICs (default) during startup
+fdi.px* - PXE-less workflow (described below)
+fdi.dhcp_timeout - DHCP NetworkManager timeout in seconds (300 by default)
+fdi.ipwait - wait time for IP to be available in proxy SSL cert start (120 by default)
+fdi.nmwait - nmcli –wait option for NetworkManager (120 by default)
+fdi.proxy_cert_days - number of days HTTPS self-signed cert is valid (999 by default)
+fdi.script - base64 encoded boot script
+
+Caching of facts will not be necessary as facts will not be implemented via
+Facter anymore.
+
+ZIP extensions are replaced by easy customization via bootable containers.
+
+Various workarounds or settings for network initialization will be dropped,
+because FDI will make full use of NetworkManager and network metrics to properly
+setup default route automatically. Countdown will not be necessary and PXE-less
+workflow will be completely removed as it was never fully supported by Red Hat.
+
+We need to reach out to customers who are using the unsupported PXE-less
+workflow for virtualized environments and discuss possible options.
+
+## How to build
+
+This is a bootable container now:
+
+  podman build
+
+
+The original README now follows:
+
+---
 
 This is a small redhat-based image that boots via PXE into memory,
 initializes all network interfaces using NetworkManager and spawns small
@@ -334,4 +376,3 @@ in file headers.
 
 Generated image is covered by additional licenses, refer to Fedora and
 CentOS licensing information.
-
