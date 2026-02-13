@@ -45,6 +45,14 @@ workflow will be completely removed as it was never fully supported by Red Hat.
 We need to reach out to customers who are using the unsupported PXE-less
 workflow for virtualized environments and discuss possible options.
 
+## Usage
+
+The fdi binary is an application spawned by systemd as a service which performs
+all actions. Options:
+
+* `fdi -facts`: only print collected facts to stdout
+* `fdi -verbose`: print more debugging information to stderr
+
 ## How to build
 
 This is a bootable container now:

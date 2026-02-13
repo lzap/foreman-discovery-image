@@ -1,69 +1,14 @@
 package facts
 
 import (
-	"bufio"
 	"log"
 	"net"
 	"os"
-	"strconv"
 	"strings"
 )
 
 func init() {
 	Register(collectNetworking)
-}
-
-// defaultRouteInterface returns the name of the interface that has the default IPv4 route, or "" if none.
-func defaultRouteInterface() string {
-	f, err := os.Open("/proc/net/route")
-	if err != nil {
-		return ""
-	}
-	defer f.Close()
-	scanner := bufio.NewScanner(f)
-	if !scanner.Scan() {
-		return ""
-	}
-	_ = scanner.Text() // skip header
-	for scanner.Scan() {
-		fields := strings.Fields(scanner.Text())
-		if len(fields) < 3 {
-			continue
-		}
-		iface, dest, flags := fields[0], fields[1], fields[3]
-		if dest == "00000000" && (flags == "0003" || flags == "0002") {
-			return iface
-		}
-	}
-	return ""
-}
-
-// ipNetToNetmask returns dotted-decimal netmask for a *net.IPNet (e.g. "255.255.255.0").
-func ipNetToNetmask(ipn *net.IPNet) string {
-	if ipn == nil || len(ipn.Mask) != 4 {
-		return ""
-	}
-	return net.IP(ipn.Mask).To4().String()
-}
-
-// ipNetToNetwork returns the network address of the IPNet as a string (e.g. "192.168.1.0" or "fe80::").
-func ipNetToNetwork(ipn *net.IPNet) string {
-	if ipn == nil {
-		return ""
-	}
-	if ip := ipn.IP.To4(); ip != nil {
-		return ipn.IP.Mask(ipn.Mask).To4().String()
-	}
-	return ipn.IP.Mask(ipn.Mask).String()
-}
-
-// ipNetToNetmaskPrefix returns the netmask as prefix length for IPv6 (e.g. "64"), or empty for IPv4.
-func ipNetToNetmaskPrefix(ipn *net.IPNet) string {
-	if ipn == nil || ipn.IP.To4() != nil {
-		return ""
-	}
-	ones, _ := ipn.Mask.Size()
-	return strconv.Itoa(ones)
 }
 
 func collectNetworking(result *Facts) error {

@@ -5,56 +5,12 @@ import (
 	"fdi/internal/cmdline"
 	"log"
 	"net"
-	"os"
-	"path/filepath"
-	"strings"
 )
 
 var zeroMAC = net.HardwareAddr{0, 0, 0, 0, 0, 0}
 
 func init() {
 	Register(discoveryBootIf)
-}
-
-// pxelinuxToMAC converts a PXELinux-style BOOTIF/fdi.pxmac value to colon-separated MAC string.
-// Format: "01-52-54-00-94-9e-52" or "01-52:54:00:94:9e:52" -> "52:54:00:94:9e:52".
-// Strips leading ARP type (e.g. 01-), then replaces any dashes with colons.
-func pxelinuxToMAC(s string) string {
-	s = strings.TrimSpace(s)
-	if s == "" {
-		return ""
-	}
-	_, after, ok := strings.Cut(s, "-")
-	if !ok {
-		return ""
-	}
-	return strings.ToLower(strings.ReplaceAll(after, "-", ":"))
-}
-
-// systemMACs reads all non-loopback interface MACs from /sys/class/net.
-// Returns nil on error or if no interfaces found.
-func systemMACs() []net.HardwareAddr {
-	entries, err := os.ReadDir("/sys/class/net")
-	if err != nil {
-		log.Printf("discovery_bootif: cannot read /sys/class/net: %v", err)
-		return nil
-	}
-	var macs []net.HardwareAddr
-	for _, e := range entries {
-		if e.Name() == "lo" {
-			continue
-		}
-		data, err := os.ReadFile(filepath.Join("/sys/class/net", e.Name(), "address"))
-		if err != nil {
-			continue
-		}
-		hw, err := net.ParseMAC(strings.TrimSpace(string(data)))
-		if err != nil {
-			continue
-		}
-		macs = append(macs, hw)
-	}
-	return macs
 }
 
 func discoveryBootIf(result *Facts) error {
