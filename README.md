@@ -88,12 +88,21 @@ fdi -facts
 ```
 
 
-## How to build
+## Building
 
 This is a bootable container now:
 
   podman build
 
+## Testing in a container
+
+## Testing in a VM
+
+  virt-install --name fdi --memory 3300 --vcpus 2 --nodisks --os-variant centos-stream10 \
+    --network network=default,model=virtio,mac=52:54:00:12:34:56 \
+    --network network=default,model=virtio \
+    --boot kernel=/var/lib/libvirt/images/tar/vmlinuz,initrd=/var/lib/libvirt/images/tar/combined.img,kernel_args="root=live:/rootfs.img rd.live.image rw console=tty0 console=ttyS0 fdi.ssh=1 proxy.url=https://XXX BOOTIF=01-52-54-00-12-34-56 ostree=/ostree/boot.1/default/XXX/0" \
+    --serial pty --console pty,target_type=serial --graphics none
 
 The original README now follows:
 
