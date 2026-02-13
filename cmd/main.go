@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"fdi/internal/facts"
-	"fdi/internal/metric"
 	"fdi/internal/opt"
 	"fdi/internal/upload"
 )
@@ -20,10 +19,6 @@ import (
 func main() {
 	flag.Parse()
 	log.SetFlags(0)
-
-	metric.EnsurePXE()
-
-	typeStr := opt.Type
 
 	if opt.Facts {
 		var f facts.Facts
@@ -46,7 +41,7 @@ func main() {
 		if opt.URL == "" {
 			log.Fatalf("-url or proxy.url is required for -once")
 		}
-		ep := &upload.Endpoint{URL: opt.URL, Type: typeStr}
+		ep := &upload.Endpoint{URL: opt.URL, Type: opt.Type}
 		if err := ep.Once(&f); err != nil {
 			log.Fatalf("upload failed: %v", err)
 		}
@@ -64,7 +59,7 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		ep := &upload.Endpoint{URL: opt.URL, Type: typeStr}
+		ep := &upload.Endpoint{URL: opt.URL, Type: opt.Type}
 		ep.Loop(ctx, time.Duration(opt.UploadSleep)*time.Second, opt.CustomPath, opt.Debug)
 	}()
 

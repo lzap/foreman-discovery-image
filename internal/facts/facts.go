@@ -25,10 +25,20 @@ type Facts struct {
 	MemorySize      int        `json:"memorysize_mb,omitempty"` // MiB
 	Memory          Memory     `json:"memory,omitempty"`
 	Processors      Processors `json:"processors,omitempty"`
-	DMI             DMI        `json:"dmi,omitempty"`
-	Disks           Disks      `json:"disks,omitempty"`
+	DMI     DMI     `json:"dmi,omitempty"`
+	Disks   Disks   `json:"disks,omitempty"`
 
 	Custom map[string]any `json:"-"`
+}
+
+// Ethtool holds ethtool output for one interface.
+type Ethtool struct {
+	Speed           string `json:"speed,omitempty"`           // Mb/s, e.g. "1000"
+	Duplex          string `json:"duplex,omitempty"`           // e.g. "full"
+	Port            string `json:"port,omitempty"`            // e.g. "Twisted Pair"
+	AutoNegotiation *bool  `json:"auto_negotiation,omitempty"`
+	WOL             bool   `json:"wol,omitempty"`  // Wake-on-LAN supports magic packet (g)
+	Link            *bool  `json:"link,omitempty"` // link detected
 }
 
 type Memory struct {
@@ -91,14 +101,15 @@ type Networking struct {
 }
 
 type Interface struct {
-	IP        string    `json:"ip"`
-	IP6       string    `json:"ip6"`
-	MTU       int       `json:"mtu"`
-	MAC       MAC       `json:"mac"`
-	Netmask   string    `json:"netmask"`
-	Network   string    `json:"network"`
-	Bindings  []Binding `json:"bindings,omitempty"`
-	Bindings6 []Binding `json:"bindings6,omitempty"`
+	IP        string     `json:"ip"`
+	IP6       string     `json:"ip6"`
+	MTU       int        `json:"mtu"`
+	MAC       MAC        `json:"mac"`
+	Netmask   string     `json:"netmask"`
+	Network   string     `json:"network"`
+	Ethtool   *Ethtool `json:"ethtool,omitempty"`
+	Bindings  []Binding  `json:"bindings,omitempty"`
+	Bindings6 []Binding  `json:"bindings6,omitempty"`
 }
 
 type Binding struct {

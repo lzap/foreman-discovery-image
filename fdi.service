@@ -1,0 +1,17 @@
+[Unit]
+Description=Foreman Discovery
+After=network.target NetworkManager.service
+Wants=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/fdi -debug
+User=root
+Group=root
+Restart=always
+RestartSec=5m
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

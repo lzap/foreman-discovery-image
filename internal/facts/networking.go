@@ -4,12 +4,24 @@ import (
 	"log"
 	"net"
 	"os"
+	"os/exec"
+	"regexp"
 	"strings"
 )
 
 func init() {
 	Register("networking", collectNetworking)
+	Register("ethtool", collectEthtool)
 }
+
+var (
+	ethtoolSpeedRe   = regexp.MustCompile(`^Speed:\s*(.*)Mb/s`)
+	ethtoolDuplexRe  = regexp.MustCompile(`^Duplex:\s*(.+)$`)
+	ethtoolPortRe    = regexp.MustCompile(`^Port:\s*(.+)$`)
+	ethtoolAutoNegRe = regexp.MustCompile(`^Auto-negotiation:\s*(.+)$`)
+	ethtoolWakeRe    = regexp.MustCompile(`^Wake-on:\s*(.+)$`)
+	ethtoolLinkRe    = regexp.MustCompile(`^Link detected:\s*(.+)$`)
+)
 
 func collectNetworking(result *Facts) error {
 	primaryName := defaultRouteInterface()
@@ -133,4 +145,83 @@ func collectNetworking(result *Facts) error {
 	}
 
 	return nil
+}
+
+func collectEthtool(result *Facts) error {
+	if len(result.Networking.Interfaces) == 0 {
+		return nil
+	}
+	if _, err := exec.LookPath("ethtool"); err != nil {
+		return nil
+	}
+	for iface := range result.Networking.Interfaces {
+		out, err := exec.Command("ethtool", iface).Output()
+		if err != nil {
+			continue
+		}
+		attrs := parseEthtoolOutput(string(out))
+		if !hasEthtoolInfo(attrs) {
+			continue
+		}
+		ifaceEntry := result.Networking.Interfaces[iface]
+		ifaceEntry.Ethtool = &attrs
+		result.Networking.Interfaces[iface] = ifaceEntry
+	}
+	return nil
+}
+
+func hasEthtoolInfo(e Ethtool) bool {
+	return e.Speed != "" || e.Duplex != "" || e.Port != "" ||
+		e.AutoNegotiation != nil || e.WOL || e.Link != nil
+}
+
+// isUgly reports whether a parsed value looks like an error/unknown (e.g. "unknown! (255)").
+func isUgly(s string) bool {
+	return strings.Contains(s, "unknown") || strings.Contains(s, "!")
+}
+
+func parseEthtoolOutput(out string) Ethtool {
+	var e Ethtool
+	for _, line := range strings.Split(out, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		if m := ethtoolSpeedRe.FindStringSubmatch(line); m != nil {
+			v := strings.TrimSpace(m[1])
+			if !isUgly(v) {
+				e.Speed = v
+			}
+			continue
+		}
+		if m := ethtoolDuplexRe.FindStringSubmatch(line); m != nil {
+			v := strings.ToLower(strings.TrimSpace(m[1]))
+			if !isUgly(v) {
+				e.Duplex = v
+			}
+			continue
+		}
+		if m := ethtoolPortRe.FindStringSubmatch(line); m != nil {
+			v := strings.TrimSpace(m[1])
+			if !isUgly(v) {
+				e.Port = v
+			}
+			continue
+		}
+		if m := ethtoolAutoNegRe.FindStringSubmatch(line); m != nil {
+			v := strings.TrimSpace(m[1]) == "on"
+			e.AutoNegotiation = &v
+			continue
+		}
+		if m := ethtoolWakeRe.FindStringSubmatch(line); m != nil {
+			e.WOL = strings.Contains(m[1], "g")
+			continue
+		}
+		if m := ethtoolLinkRe.FindStringSubmatch(line); m != nil {
+			v := strings.TrimSpace(m[1]) == "yes"
+			e.Link = &v
+			continue
+		}
+	}
+	return e
 }

@@ -19,3 +19,5 @@
 /fdi-rhel*.ks
 /build-livecd-root.conf.sh
 /result/*
+/fdi
+/.container

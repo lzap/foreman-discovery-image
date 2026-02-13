@@ -90,11 +90,24 @@ fdi -facts
 
 ## Building
 
-This is a bootable container now:
+Requirements:
 
-  podman build
+* Go 1.26+
+* podman
+
+To build the container:
+
+  make
+
+The root account is fully locked, to unlock it, set a password and also start ssh:
+
+  make PASSWORD=redhat
 
 ## Testing in a container
+
+To test the image in podman:
+
+  make run PASSWORD=redhat CMDLINE="proxy.url=https://192.168.99.97"
 
 ## Testing in a VM
 
