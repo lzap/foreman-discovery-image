@@ -157,7 +157,7 @@ func Collect(result *Facts, debug bool, customPath string) error {
 		for i := 0; i < n; i++ {
 			parts[i] = fmt.Sprintf("%s %v", times[i].name, times[i].d)
 		}
-		log.Printf("top 5 slowest collectors: %s", strings.Join(parts, ", "))
+		log.Printf("stats: %s", strings.Join(parts, ", "))
 	}
 	return nil
 }

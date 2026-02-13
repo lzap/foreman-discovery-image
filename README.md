@@ -48,10 +48,38 @@ workflow for virtualized environments and discuss possible options.
 ## Usage
 
 The fdi binary is an application spawned by systemd as a service which performs
-all actions. Options:
+all actions.
 
-* `fdi -facts`: only print collected facts to stdout
-* `fdi -debug`: safe mode (no reboots or configuration actions) and print debugging information to stderr
+### Command-line options
+
+* `-facts` — only print collected facts to stdout (JSON)
+* `-debug` — safe mode (no reboots or configuration actions) and print debugging information to stderr (e.g. top 5 slowest collectors)
+* `-once` — perform a single facts upload to the endpoint and exit
+* `-url` — endpoint base URL (e.g. `https://foreman.example.com`). If omitted, the kernel command line option `proxy.url` is used
+* `-type` — endpoint type: `foreman` or `proxy` (default: `foreman`). If omitted, the kernel command line option `proxy.type` is used
+* `-custom_path` — path to search for `fdi-fact-*` executables in addition to PWD (default: `/usr/local/bin`)
+
+## Custom facts
+
+Any executables in the current directory (PWD) or in the path given by `-custom_path` (default `/usr/local/bin`), whose names start with `fdi-fact-`, will be executed. Output is trimmed from
+whitespace and added to the fact ouput. All stderr output is returned in
+`_stderr` and exit code that is not zero is returned in `_code`. Example:
+
+```
+cat ./fdi-fact-abc
+#!/bin/sh
+echo Hi
+```
+
+Make sure it is executable and:
+
+```
+fdi -facts
+{
+  "abc": "Hi"
+}
+```
+
 
 ## How to build
 
