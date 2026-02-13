@@ -4,13 +4,16 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"fdi/internal/facts"
+	"fdi/internal/opt"
 )
 
 // TODO: add automatic detection of proxy/foreman
@@ -18,7 +21,7 @@ const SatelliteURL = "https://foreman.routed.lan/api/v2/discovered_hosts/facts"
 
 func RegisterWithSatellite() error {
 	var f facts.Facts
-	if err := facts.Collect(&f); err != nil {
+	if err := facts.Collect(&f, opt.Debug, opt.CustomPath); err != nil {
 		return fmt.Errorf("failed to collect facts: %w", err)
 	}
 
@@ -30,8 +33,6 @@ func RegisterWithSatellite() error {
 	if err != nil {
 		return fmt.Errorf("failed to encode facts: %w", err)
 	}
-
-	log.Println(string(jsonData))
 
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
@@ -60,17 +61,30 @@ func RegisterWithSatellite() error {
 		return nil
 	}
 
-	// print response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return fmt.Errorf("failed to read response body: %w", err)
 	}
-	log.Println(string(body))
 
-	return fmt.Errorf("satellite returned error: %s", resp.Status)
+	return fmt.Errorf("satellite returned error: %s: %s", resp.Status, string(body))
 }
 
 func main() {
+	flag.Parse()
+
+	if opt.Facts {
+		var f facts.Facts
+		if err := facts.Collect(&f, opt.Debug, opt.CustomPath); err != nil {
+			log.Fatalf("failed to collect facts: %v", err)
+		}
+		enc := json.NewEncoder(os.Stdout)
+		enc.SetIndent("", "  ")
+		if err := enc.Encode(map[string]any{"facts": f}); err != nil {
+			log.Fatalf("failed to encode facts: %v", err)
+		}
+		return
+	}
+
 	err := RegisterWithSatellite()
 	if err != nil {
 		fmt.Printf("Registration failed: %v\n", err)

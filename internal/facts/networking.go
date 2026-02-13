@@ -8,7 +8,7 @@ import (
 )
 
 func init() {
-	Register(collectNetworking)
+	Register("networking", collectNetworking)
 }
 
 func collectNetworking(result *Facts) error {

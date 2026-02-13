@@ -8,7 +8,7 @@ import (
 )
 
 func init() {
-	Register(collectStorage)
+	Register("storage", collectStorage)
 }
 
 const blockBase = "/sys/block"

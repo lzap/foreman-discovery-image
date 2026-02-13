@@ -51,7 +51,7 @@ The fdi binary is an application spawned by systemd as a service which performs
 all actions. Options:
 
 * `fdi -facts`: only print collected facts to stdout
-* `fdi -verbose`: print more debugging information to stderr
+* `fdi -debug`: safe mode (no reboots or configuration actions) and print debugging information to stderr
 
 ## How to build
 

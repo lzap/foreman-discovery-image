@@ -8,7 +8,7 @@ import (
 const dmiBase = "/sys/class/dmi/id"
 
 func init() {
-	Register(collectDMI)
+	Register("dmi", collectDMI)
 }
 
 func collectDMI(result *Facts) error {

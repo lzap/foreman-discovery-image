@@ -10,7 +10,7 @@ import (
 var zeroMAC = net.HardwareAddr{0, 0, 0, 0, 0, 0}
 
 func init() {
-	Register(discoveryBootIf)
+	Register("discovery_bootif", discoveryBootIf)
 }
 
 func discoveryBootIf(result *Facts) error {

@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	Register(collectCPU)
+	Register("cpu", collectCPU)
 }
 
 func collectCPU(result *Facts) error {

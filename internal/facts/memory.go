@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	Register(collectMemory)
+	Register("memory", collectMemory)
 }
 
 func collectMemory(result *Facts) error {
