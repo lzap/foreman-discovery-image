@@ -1,6 +1,5 @@
 # Variables
 IMAGE_NAME := fdi-image
-TEST_NET := fdi-net
 MOCK_CMDLINE_FILE := /tmp/fdi_mock_cmdline
 
 # Conditional Build Argument logic
@@ -32,15 +31,13 @@ run: .container
 		exit 1; \
 	fi
 	$(eval TEST_MAC := 00:11:22:33:44:55)
-	@podman network exists $(TEST_NET) || podman network create $(TEST_NET)
 	@echo "BOOTIF=01-$(shell echo $(TEST_MAC) | tr ':' '-') $(CMDLINE)" > $(MOCK_CMDLINE_FILE)
 	podman run --rm -it \
 		--cap-add=NET_ADMIN \
 		--cap-add=SYS_ADMIN \
 		--security-opt seccomp=unconfined \
 		--device /dev/net/tun:/dev/net/tun \
-		--network bridge \
-		--network $(TEST_NET):mac=$(TEST_MAC) \
+		--network bridge:mac=$(TEST_MAC) \
 		-v $(MOCK_CMDLINE_FILE):/proc/cmdline:ro \
 		$(IMAGE_NAME):latest
 

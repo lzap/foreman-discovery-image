@@ -117,6 +117,12 @@ To test the image in podman:
     --boot kernel=/var/lib/libvirt/images/tar/vmlinuz,initrd=/var/lib/libvirt/images/tar/combined.img,kernel_args="root=live:/rootfs.img rd.live.image rw console=tty0 console=ttyS0 fdi.ssh=1 proxy.url=https://XXX BOOTIF=01-52-54-00-12-34-56 ostree=/ostree/boot.1/default/XXX/0" \
     --serial pty --console pty,target_type=serial --graphics none
 
+## TODO
+
+* Test multiple interfaces in a VM (podman cannot work due to hardcoded routes)
+* Test via qcow2
+* Test via PXE
+
 The original README now follows:
 
 ---

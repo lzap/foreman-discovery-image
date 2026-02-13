@@ -8,8 +8,8 @@ if [ -z "$BOOTIF_RAW" ]; then
     exit 0
 fi
 
-# Clean MAC (remove 01- prefix and change - to :)
-BOOTIF_MAC=$(echo "$BOOTIF_RAW" | sed 's/^01-//;s/-/:/g')
+# Clean MAC (remove 01- prefix, change - to :, lowercase)
+BOOTIF_MAC=$(echo "$BOOTIF_RAW" | sed 's/^01-//;s/-/:/g' | tr 'A-F' 'a-f')
 
 # Ensure the default metric is 100 and no other connections are auto-defaulted
 cat <<EOF > "/etc/NetworkManager/conf.d/99-default-metrics.conf"
@@ -21,12 +21,15 @@ ipv4.route-metric=100
 ipv6.route-metric=100
 EOF
 
-# Find the interface name associated with this MAC
+# Find the interface name associated with this MAC (compare lowercase)
 IFACE_NAME=""
 for dev in /sys/class/net/*; do
-    if [ -f "$dev/address" ] && [ "$(cat "$dev/address")" == "$BOOTIF_MAC" ]; then
-        IFACE_NAME=$(basename "$dev")
-        break
+    if [ -f "$dev/address" ]; then
+        dev_mac=$(tr 'A-F' 'a-f' < "$dev/address")
+        if [ "$dev_mac" = "$BOOTIF_MAC" ]; then
+            IFACE_NAME=$(basename "$dev")
+            break
+        fi
     fi
 done
 
@@ -55,6 +58,3 @@ EOF
 
 chmod 600 "/etc/NetworkManager/system-connections/${IFACE_NAME}.nmconnection"
 echo "Configured $IFACE_NAME as primary PXE interface."
-
-# This forces NM to re-negotiate and apply your metric 10.
-ip route flush default
