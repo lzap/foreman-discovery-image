@@ -1,0 +1,29 @@
+# root password can be overriden here
+#[[customizations.user]]
+#name = "root"
+#password = ""
+#key = "ssh-rsa AAA ... root@fdi"
+
+# TODO - remove the rest
+#[[customizations.disk.partitions]]
+#type = "plain"
+#mountpoint = "/"
+#fs_type = "ext4"
+#minsize = "1 MiB" # real size is 2x container size
+
+#[[customizations.disk.partitions]]
+#type = "plain"
+#mountpoint = "/boot"
+#fs_type = "ext4"
+#minsize = "400 MiB"
+
+#[[customizations.disk.partitions]]
+#type = "plain"
+#mountpoint = "/boot/efi"
+#fs_type = "vfat"
+#minsize = "50 MiB"
+
+#[[customizations.disk.partitions]]
+#type = "plain"
+#fs_type = "swap"
+#minsize = "1 MiB"

@@ -3,4 +3,7 @@
 /*.iso
 /*.log
 /fdi
+/output
+/m
 /.container
+/.vm

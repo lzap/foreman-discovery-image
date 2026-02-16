@@ -137,7 +137,7 @@ virt-install --name fdi --memory 3300 --vcpus 2 --nodisks --os-variant centos-st
 ## TODO
 
 * Test multiple interfaces in a VM (podman cannot work due to hardcoded routes)
-* Test via qcow2
+* Symlink so ostree= is not needed for PXE
 * Test via PXE
 
 The original code can be found in the `legacy/` folder.
