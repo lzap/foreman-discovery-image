@@ -14,7 +14,7 @@
 Foreman Discovery Image
 =======================
 
-FDI is a CentOS Stream 9 bootc image for discovering hosts with Foreman.
+FDI is a CentOS Stream 10 bootc image for discovering hosts with Foreman.
 It boots via PXE into memory, configures networking with NetworkManager and
 uploads hardware facts to the Foreman Discovery plugin. It includes the
 interactive discovery TUI, automatic registration, extension scripts, LLDP,
@@ -50,7 +50,7 @@ http://theforeman.org/plugins/foreman_discovery/
 Building with bootc
 -------------------
 
-The `Containerfile` builds a CentOS Stream 9 bootable container containing the
+The `Containerfile` builds a CentOS Stream 10 bootable container containing the
 FDI packages, scripts, TUI, facts and Smart Proxy. Build it with Podman as your
 regular user; the container build does not require a VM or a running Foreman:
 
@@ -58,7 +58,7 @@ regular user; the container build does not require a VM or a running Foreman:
 podman build --pull=always \
   --build-arg FDI_VERSION="$(git describe --tags --always)" \
   --build-arg FDI_RELEASE="$(date -u +%Y%m%d).1" \
-  -t localhost/fdi:stream9 .
+  -t localhost/fdi:stream10 .
 ```
 
 The package list is in `bootc/packages.txt`. The build copies the existing
@@ -66,14 +66,16 @@ The package list is in `bootc/packages.txt`. The build copies the existing
 the target kernel's initramfs for live PXE boot and runs `bootc container lint`
 with fatal warnings. Only the composefs check is explicitly skipped, because
 this PXE squashfs workflow requires composefs to be disabled.
-CentOS Stream 10 is a subsequent migration; changing the base alone does not
-make the EL9 packages and extension networking helpers compatible with EL10.
+The build and discovered machines must support x86-64-v3, the CentOS Stream 10
+CPU baseline. NICs and storage controllers must also have EL10 drivers.
+Stream 9-only hardware is outside this image's supported scope. See the
+[CentOS Stream 10 release notes](https://www.centos.org/centos10/).
 
 Build arguments:
 
 | Argument | Default | Purpose |
 | --- | --- | --- |
-| `BASE_IMAGE` | `quay.io/centos-bootc/centos-bootc:stream9` | Base container; a digest can pin the base input. |
+| `BASE_IMAGE` | `quay.io/centos-bootc/centos-bootc:stream10` | Base container; a digest can pin the base input. |
 | `FOREMAN_VERSION` | `nightly` | Foreman release and matching plugin repositories. |
 | `FDI_VERSION` | `dev` | Value reported by the discovery version fact. |
 | `FDI_RELEASE` | `1` | Value reported by the discovery release fact. |
@@ -136,8 +138,11 @@ podman run -dit --name fdi-dev --hostname fdi \
   --env FDI_CMDLINE="$fdi_cmdline" \
   -p 127.0.0.1:2222:22 \
   -p 127.0.0.1:18443:8443 -p 127.0.0.1:18448:8448 \
-  localhost/fdi:stream9 /sbin/init --unit=multi-user.target
-podman exec fdi-dev systemctl is-system-running --wait
+  localhost/fdi:stream10 /sbin/init --unit=multi-user.target
+podman exec fdi-dev timeout 30s /bin/bash -c '
+  until test -S /run/systemd/private; do sleep 0.1; done
+  systemctl is-system-running --wait
+'
 ```
 
 This works with the production-default image: the runtime options enable
@@ -151,7 +156,9 @@ DHCP selection in the TUI still overrides boot-time static addressing.
 container on its own network; FDI configures interfaces during startup. The
 default pasta network uses a TAP device, which does not accept FDI's Ethernet
 profile. The explicit systemd target avoids inheriting a rescue/runlevel
-setting from the host environment.
+setting from the host environment. EL10's NFS RPC filesystem mount is skipped
+inside containers because rootless Podman cannot mount it; machine boots
+retain the normal NFS behavior.
 
 To inspect the effective options and connection:
 
@@ -265,19 +272,19 @@ podman network rm fdi-dev
 
 ### Generate PXE artifacts with Image Builder
 
-This is a separate step from `podman build`. The `centos-9 / pxe-tar-xz` entry
+This is a separate step from `podman build`. The `centos-10 / pxe-tar-xz` entry
 in `image-builder list` describes a package-composed image. For this container,
 use `--bootc-ref` with `pxe-tar-xz` and omit `--distro`:
 
 ```sh
 # Export from your rootless Podman storage.
-podman save --format oci-archive --output fdi.oci localhost/fdi:stream9
+podman save --format oci-archive --output fdi.oci localhost/fdi:stream10
 
 # On the image-building machine, import into the storage used by the builder.
-sudo skopeo copy oci-archive:fdi.oci containers-storage:localhost/fdi:stream9
+sudo skopeo copy oci-archive:fdi.oci containers-storage:localhost/fdi:stream10
 
 sudo image-builder build pxe-tar-xz \
-  --bootc-ref localhost/fdi:stream9 \
+  --bootc-ref localhost/fdi:stream10 \
   --arch x86_64 \
   --blueprint bootc/pxe.toml \
   --output-dir output \
@@ -289,15 +296,15 @@ The image-building machine needs `image-builder`, `osbuild`, and either
 
 ```sh
 fdi_image_id=$(sudo buildah pull oci-archive:fdi.oci)
-sudo buildah tag "$fdi_image_id" localhost/fdi:stream9
+sudo buildah tag "$fdi_image_id" localhost/fdi:stream10
 ```
 
 The PXE build was tested with image-builder 87.0.0 and osbuild 193, using
 the Buildah import. To keep output and caches on a separate filesystem,
-add `--output-dir /scratch/images/fdi-stream9` (replacing `--output-dir output`),
+add `--output-dir /scratch/images/fdi-stream10` (replacing `--output-dir output`),
 `--cache /scratch/images/.image-builder-cache`, and
 `--rpmmd-cache /scratch/images/.image-builder-rpmmd` to the build command.
-Use `--output-name fdi-stream9-x86_64` to choose the artifact basename.
+Use `--output-name fdi-stream10-x86_64` to choose the artifact basename.
 Older releases may lack the bootc PXE type or options shown here.
 Image Builder needs mount/loop-device privileges; the `sudo` process uses a
 different container store from rootless Podman. Export/import above crosses
@@ -460,12 +467,12 @@ Adding drivers/firmware
 Install additional packages with `EXTRA_PACKAGES`, list early-boot kernel
 modules in `EXTRA_DRIVERS`, and add any required repository or configuration
 files to the Containerfile/overlay. The module names must exist in the image
-kernel. For example, to include the distribution's Mellanox modules in the
+kernel. For example, to include the distribution's Intel Ethernet modules in the
 initramfs:
 
 ```sh
-podman build --build-arg 'EXTRA_DRIVERS=mlx4_core mlx4_ib mlx4_en mlxfw' \
-  -t localhost/fdi:stream9 .
+podman build --build-arg 'EXTRA_DRIVERS=ixgbe i40e' \
+  -t localhost/fdi:stream10 .
 ```
 
 Third-party modules must match the container's kernel, including signing
@@ -510,6 +517,21 @@ Extensions can write under `/opt/extension`, `/etc`, `/var` and `/tmp` on the
 live system. Bootc keeps `/usr` read-only: include RPMs, libraries or system
 files there at container build time instead of installing them at runtime.
 Writable extension data and configuration are discarded on reboot.
+
+The `cfg_eth`, `cfg_bond` and `cfg_slave` script helpers now create
+NetworkManager keyfiles under `/etc/NetworkManager/system-connections/`.
+Their positional arguments and common ifcfg-style options are retained:
+DHCP/static IPv4 and IPv6 addresses, prefixes/netmasks, gateways, DNS,
+MAC/MTU settings, automatic connection, bond options and bond membership.
+Generation works before NetworkManager starts; `reload_nm` still reloads
+profiles when it is running. Unsupported settings return an error without
+overwriting the existing profile. The mapping is in
+`root/usr/share/fdi/ifcfg_to_keyfile.rb`.
+
+Extensions that write `/etc/sysconfig/network-scripts/ifcfg-*` directly must
+write keyfiles instead. Use native NetworkManager keyfiles for settings
+outside the helper mapping. EL10 removed the ifcfg plugin; see the
+[EL10 networking changes](https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html/considerations_in_adopting_rhel_10/networking).
 
 Additional facts
 ----------------
@@ -560,7 +582,7 @@ rootfs and generated `ostree=` path all come from the same build. Do not add
 Validation and limitations
 --------------------------
 
-Rootless Podman builds and userspace smoke tests cover systemd startup,
+CentOS Stream 10 rootless Podman builds and userspace smoke tests cover systemd startup,
 root/redhat console and SSH login, the TUI, primary-interface configuration,
 extension storage, and the HTTP/HTTPS Smart Proxy APIs. Access to a host
 Foreman and Smart Proxy can be checked using the instructions above.
@@ -569,6 +591,11 @@ were checked under systemd, and both registration payload formats with an
 isolated HTTP receiver. Direct registration was also tested against a local
 Foreman with `proxy.type=foreman`: it returned HTTP 201, created the discovered
 host, and imported its static network configuration and custom test fact.
+Repeated uploads and fact-cache reads were checked under Ruby 3.3 without
+registration service restarts. The migrated network helpers were tested
+offline and with a live bond and two member interfaces in the container's
+private network namespace. TFTP ZIP extraction and extension startup were
+also exercised.
 Automatic provisioning was disabled for that test; Foreman callbacks into
 the rootless container and kexec provisioning have not been validated.
 
@@ -590,14 +617,21 @@ artifact workflow.
 Updates consist of rebuilding and republishing the PXE artifacts; live
 `bootc upgrade` and persistent on-disk installations are outside this workflow.
 
-For CentOS Stream 10, first confirm the availability of the Foreman packages
-and Ruby/newt dependencies, replace the ifcfg-based extension networking
-helpers with NetworkManager keyfiles or `nmcli`, and audit Ruby compatibility.
-See the [EL10 networking changes](https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html/considerations_in_adopting_rhel_10/networking)
-for the removal of ifcfg support.
-Then change the base image and repeat the PXE/hardware checks. The EL10 CPU
-baseline and driver removals can also change which discovered hosts are
-supported; switching `BASE_IMAGE` alone is not sufficient.
+The Stream 10 migration uses the EL10 Foreman repositories selected by
+`VERSION_ID` in the container. The missing EL9 FDI metapackages are replaced
+with their explicit Smart Proxy, discovery plugin, Ruby/newt and gettext
+dependencies. The overlay supplies the same FDI scripts and TUI. Ruby code
+uses APIs available in Ruby 3.3, the temporary registration cache stores plain
+JSON instead of YAML objects, and CI checks the EL10 password-status format.
+The cache format change preserves repeated fact comparisons with Ruby 3.3's
+stricter YAML loader.
+
+CentOS Stream 10 does not support every device supported by Stream 9.
+In particular, the previous `mlx4` extra-driver example cannot be used with
+the EL10 distribution kernel. Check the
+[EL10 hardware changes](https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html/considerations_in_adopting_rhel_10/hardware-enablement)
+before deploying to older machines. Keep kernel, firmware and bootloader
+validation separate from userspace container checks.
 
 Contributing
 ------------

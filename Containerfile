@@ -1,6 +1,6 @@
 # Build with rootless Podman; see README.md. The result is a bootable OS
 # container, consumed by image-builder's pxe-tar-xz output type.
-ARG BASE_IMAGE=quay.io/centos-bootc/centos-bootc:stream9
+ARG BASE_IMAGE=quay.io/centos-bootc/centos-bootc:stream10
 FROM ${BASE_IMAGE}
 
 ARG FOREMAN_VERSION=nightly
@@ -178,6 +178,8 @@ dnf clean all
 rm -rf /var/cache/dnf /var/lib/dnf /var/cache/ldconfig /var/lib/rhsm/*
 find /var/log -type f -delete
 rm -rf /run/foreman-proxy /run/rhsm
+# EL10's kdump dracut hook leaves a build-time lock behind.
+rm -f /tmp/kdump.lock
 if [[ -d /var/roothome/buildinfo ]]; then
     mv /var/roothome/buildinfo /usr/share/fdi/base-buildinfo
 fi

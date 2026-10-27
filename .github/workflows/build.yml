@@ -25,7 +25,7 @@ jobs:
         run: |
           podman run --rm localhost/fdi:ci /bin/bash -euxo pipefail -c '
             test "$(uname -m)" = x86_64
-            passwd -S root | grep -q " LK "
+            passwd -S root | grep -q " L "
             test "$(systemctl is-enabled sshd.service)" = disabled
             test "$(systemctl is-enabled discovery-menu.service)" = enabled
             test "$(readlink /opt/extension)" = /var/opt/extension
@@ -39,6 +39,10 @@ jobs:
           '
       - name: Check FDI command-line overrides and network profiles
         run: podman run --rm -i localhost/fdi:ci /bin/bash < test/cmdline.sh
+      - name: Check EL10 extension network helpers
+        run: podman run --rm -i localhost/fdi:ci /bin/bash < test/network-helpers.sh
+      - name: Check repeated fact registration with Ruby 3.3
+        run: podman run --rm -i --network none localhost/fdi:ci ruby < test/register_cache.rb
       - name: Export OCI archive
         run: podman save --format oci-archive --output fdi.oci localhost/fdi:ci
       - name: Archive container

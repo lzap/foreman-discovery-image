@@ -19,11 +19,17 @@ net-tools
 dmidecode
 pciutils
 virt-what
-foreman-discovery-image-service
-foreman-discovery-image-service-tui
+# The EL9 FDI metapackages are not published for EL10. Their dependencies are
+# listed explicitly; the image overlay supplies the discovery scripts and TUI.
+foreman-proxy
+rubygem-smart_proxy_discovery_image
+ruby
+rubygems
+rubygem-fast_gettext
+rubygem-newt
 curl
 wget
-passwd
+shadow-utils
 sudo
 OpenIPMI
 ipmitool
@@ -35,7 +41,6 @@ less
 file
 openssh-clients
 openssh-server
-# On EL9 this also includes the ifcfg-rh plugin used by extension helpers.
 NetworkManager
 unzip
 binutils
