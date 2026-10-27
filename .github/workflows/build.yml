@@ -13,21 +13,38 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
-      - name: Setup libvirt for Vagrant
-        uses: voxpupuli/setup-vagrant@v0
-      - name: Build image
-        run: repoowner=theforeman branch=${{ github.ref }} proxy_repo=nightly vagrant up fdi-builder
-        working-directory: aux/vagrant-build
-      - name: Copy image
+      - name: Install Podman
+        run: sudo apt-get update && sudo apt-get install -y podman
+      - name: Build bootc container as the runner user
         run: |
-          vagrant ssh-config fdi-builder | tee vagrant-ssh-config.tmp
-          mkdir result
-          scp -F vagrant-ssh-config.tmp fdi-builder:foreman-discovery-image/fdi*tar result/
-          scp -F vagrant-ssh-config.tmp fdi-builder:foreman-discovery-image/fdi*iso result/
-        working-directory: aux/vagrant-build
-      - name: Archive image
+          podman build --pull=always \
+            --build-arg "FDI_VERSION=ci-${GITHUB_SHA}" \
+            --build-arg "FDI_RELEASE=${GITHUB_RUN_NUMBER}" \
+            -t localhost/fdi:ci .
+      - name: Check container defaults and runtime dependencies
+        run: |
+          podman run --rm localhost/fdi:ci /bin/bash -euxo pipefail -c '
+            test "$(uname -m)" = x86_64
+            passwd -S root | grep -q " LK "
+            test "$(systemctl is-enabled sshd.service)" = disabled
+            test "$(systemctl is-enabled discovery-menu.service)" = enabled
+            test "$(readlink /opt/extension)" = /var/opt/extension
+            test -s /usr/PACKAGES-LIST
+            test -s /usr/lib/modules/*/initramfs.img
+            bash -n /usr/bin/nm-configure /usr/bin/nm-prepare /usr/bin/discovery-debug
+            ruby -r discovery -r newt -e "puts RUBY_VERSION"
+            for tool in lspci dmidecode ethtool lldptool ipmitool parted kexec; do
+              command -v "$tool"
+            done
+          '
+      - name: Check FDI command-line overrides and network profiles
+        run: podman run --rm -i localhost/fdi:ci /bin/bash < test/cmdline.sh
+      - name: Export OCI archive
+        run: podman save --format oci-archive --output fdi.oci localhost/fdi:ci
+      - name: Archive container
         uses: actions/upload-artifact@v5
         with:
-          name: fdi
-          path: aux/vagrant-build/result/*.iso
+          name: fdi-bootc-oci
+          path: fdi.oci
+          compression-level: 0
           retention-days: 15
