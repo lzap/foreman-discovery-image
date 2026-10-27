@@ -61,8 +61,11 @@ podman build --pull=always \
   -t localhost/fdi:stream10 .
 ```
 
-The package list is in `bootc/packages.txt`. The build copies the existing
-`root/` overlay and then the bootc-specific files in `bootc/root/`. It rebuilds
+The package list is in `bootc/packages.txt`. The Containerfile runs
+`bootc/install-packages.sh` and `bootc/configure.sh` inside the image build,
+using copied scripts for compatibility with Ubuntu 24.04's Podman parser.
+The build copies the existing `root/` overlay and then the bootc-specific
+files in `bootc/root/`. It rebuilds
 the target kernel's initramfs for live PXE boot and runs `bootc container lint`
 with fatal warnings. Only the composefs check is explicitly skipped, because
 this PXE squashfs workflow requires composefs to be disabled.
