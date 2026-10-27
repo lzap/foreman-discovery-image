@@ -318,6 +318,45 @@ produced by `pxe-tar-xz`.
 See the upstream [CLI documentation](https://osbuild.org/docs/developer-guide/projects/image-builder/usage/)
 and [bootc PXE image description](https://osbuild.org/docs/user-guide/image-descriptions/bootc/pxe-tar-xz/).
 
+### CI builds and downloads
+
+The `Build` workflow runs for pull requests and pushes to `master`. It builds
+and tests the container with rootless Podman, then passes that exact OCI image
+to a separate PXE job. The PXE job runs the official Image Builder container,
+pinned by digest in `.github/workflows/build.yml`, with the privileges needed
+by OSBuild on an ephemeral GitHub-hosted runner. No registry publication or
+Foreman instance is required.
+
+Download artifacts from the workflow run's **Artifacts** section:
+
+| Artifact | Contents | Retention |
+| --- | --- | --- |
+| `fdi-bootc-oci-pr-N`, `fdi-pxe-pr-N` | Tested container and PXE output for PR N | 15 days per run |
+| `fdi-bootc-oci-master`, `fdi-pxe-master` | Container and PXE output from `master` | Up to 90 days; older image artifacts are removed after a replacement succeeds |
+| `fdi-pxe-logs-pr-N`, `fdi-pxe-logs-master` | Image Builder log, manifest and build metadata, including failure diagnostics | 15 days |
+
+The PXE artifact contains `fdi-stream10-x86_64.tar.xz`, `SHA256SUMS`,
+`build-info.txt` and `validation.json`. For example, download a successful
+master build by its workflow run ID and verify it:
+
+```sh
+gh run download RUN_ID --repo theforeman/foreman-discovery-image \
+  --name fdi-pxe-master --dir output
+(cd output && sha256sum --check SHA256SUMS)
+```
+
+Only a successful master build can prune older master image artifacts. Failed
+builds preserve the previous successful output, and rerunning an older build
+does not remove a newer successful image. PR artifacts and diagnostic logs
+expire normally. Retention is subject to the repository/organization limit;
+even the last master image expires after 90 days without a replacement.
+These are temporary Actions artifacts, not permanent release assets.
+
+CI validates archive extraction, GRUB syntax, the OSTree deployment path,
+the matching EL10 kernel and required live-boot initramfs modules. It does not
+boot the resulting image; BIOS/UEFI PXE and hardware validation remain
+separate checks.
+
 ### Boot files and kernel arguments
 
 The archive contains `vmlinuz`, `initrd.img`, a separate squashfs `rootfs.img`,
